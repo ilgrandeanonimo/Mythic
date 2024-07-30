@@ -17,6 +17,7 @@
 import SwiftUI
 import SwordRPC
 import OSLog
+import UniformTypeIdentifiers
 
 extension GameImportView {
     struct Epic: View {
@@ -35,6 +36,14 @@ extension GameImportView {
         @State private var checkIntegrity: Bool = true
         
         @State private var isOperating: Bool = false
+        
+        @State private var isFileImporterPresented = false
+        var fileImporterFileType: [UTType] {
+            if platform == .windows {
+                return [UTType.exe]
+            }
+            return [UTType.application]
+        }
         
         var body: some View {
             Form {
@@ -87,21 +96,19 @@ extension GameImportView {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .help("File/Folder is not readable by Mythic.")
                     }
-                    
-                    Button("Browse...") { // TODO: replace with .fileImporter
-                        let openPanel = NSOpenPanel()
-                        openPanel.allowedContentTypes = []
-                        openPanel.canChooseDirectories = true
-                        if platform == .macOS { // only way to make it update on change
-                            openPanel.allowedContentTypes = [.application]
-                        } else if platform == .windows {
-                            openPanel.allowedContentTypes = [.exe]
-                        }
-                        
-                        openPanel.allowsMultipleSelection = false
-                        
-                        if openPanel.runModal() == .OK {
-                            path = openPanel.urls.first?.path ?? .init()
+                    Button("Browse...") {
+                        isFileImporterPresented.toggle()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .fileImporter(
+                        isPresented: $isFileImporterPresented,
+                        allowedContentTypes: fileImporterFileType
+                    ) { result in
+                        switch(result) {
+                        case .success(let url):
+                            path = url.path
+                        case .failure(let error):
+                            print(error.localizedDescription)
                         }
                     }
                 }

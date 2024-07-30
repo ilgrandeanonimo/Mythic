@@ -18,6 +18,7 @@ import SwiftUI
 import CachedAsyncImage
 import SwordRPC
 import Shimmer
+import UniformTypeIdentifiers
 
 extension GameImportView {
     struct Local: View {
@@ -27,6 +28,14 @@ extension GameImportView {
         @State private var title: String = .init()
         @State private var platform: Game.Platform = .macOS
         @State private var path: String = .init()
+        
+        @State private var isFileImporterPresented = false
+        var fileImporterFileType: [UTType] {
+            if platform == .windows {
+                return [UTType.exe]
+            }
+            return [UTType.application]
+        }
         
         var body: some View {
             VStack {
@@ -121,20 +130,19 @@ extension GameImportView {
                             }
                             
                             // TODO: unify
-                            Button("Browse...") { // TODO: replace with .fileImporter
-                                let openPanel = NSOpenPanel()
-                                openPanel.allowedContentTypes = []
-                                openPanel.canChooseDirectories = true
-                                if platform == .macOS { // only way to make it update on change, no switch
-                                    openPanel.allowedContentTypes = [.application]
-                                } else if platform == .windows {
-                                    openPanel.allowedContentTypes = [.exe]
-                                }
-                                
-                                openPanel.allowsMultipleSelection = false
-                                
-                                if openPanel.runModal() == .OK {
-                                    path = openPanel.urls.first?.path ?? .init()
+                            Button("Browse...") {
+                                isFileImporterPresented.toggle()
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .fileImporter(
+                                isPresented: $isFileImporterPresented,
+                                allowedContentTypes: fileImporterFileType
+                            ) { result in
+                                switch(result) {
+                                case .success(let url):
+                                    path = url.path
+                                case .failure(let error):
+                                    print(error.localizedDescription)
                                 }
                             }
                         }
